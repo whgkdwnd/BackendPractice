@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>/chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 720px; margin: 0 auto; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    label { display: block; font-size: 14px; margin-bottom: 6px; }
+    input { padding: 8px; width: 180px; }
+    button { padding: 9px 14px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .hint { color: #666; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h2>/chart</h2>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>max (총량)</label>
+        <input id="maxInput" type="number" min="0" step="1" value="100" />
+      </div>
+      <div>
+        <label>percentage (0~100)</label>
+        <input id="pctInput" type="number" min="0" max="100" step="1" value="30" />
+      </div>
+      <div>
+        <button id="applyBtn">적용</button>
+      </div>
+    </div>
+    <div class="hint">
+      예) max=100, percentage=30 → mine=30, other=70 도넛 그래프
+    </div>
+  </div>
+
+  <div class="card" style="display:flex; gap:24px; flex-wrap:wrap; align-items:center;">
+    <div style="width:320px; height:320px;">
+      <canvas id="chartCanvas"></canvas>
+    </div>
+    <div>
+      <div id="summary" style="font-size:16px;"></div>
+    </div>
+  </div>
+
+<script>
+  const maxInput = document.getElementById("maxInput");
+  const pctInput = document.getElementById("pctInput");
+  const applyBtn = document.getElementById("applyBtn");
+  const summary = document.getElementById("summary");
+  const ctx = document.getElementById("chartCanvas");
+
+  let chart;
+
+  function clamp(n, min, max) {
+    return Math.min(Math.max(n, min), max);
+  }
+
+  function render() {
+    const max = Number(maxInput.value);
+    const pct = Number(pctInput.value);
+
+    const safeMax = isFinite(max) ? Math.max(max, 0) : 0;
+    const safePct = isFinite(pct) ? clamp(pct, 0, 100) : 0;
+
+    const mine = safeMax * (safePct / 100);
+    const other = Math.max(safeMax - mine, 0);
+
+    summary.textContent =
+      `mine: ${mine.toFixed(2)} / total: ${safeMax.toFixed(2)}  (${safePct.toFixed(0)}%)`;
+
+    const data = {
+      labels: ["mine", "other"],
+      datasets: [{ data: [mine, other] }]
+    };
+
+    if (chart) {
+      chart.data = data;
+      chart.update();
+      return;
+    }
+
+    chart = new Chart(ctx, {
+      type: "doughnut",
+      data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: (item) => `${item.label}: ${Number(item.raw).toFixed(2)}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  applyBtn.addEventListener("click", render);
+  maxInput.addEventListener("input", render);
+  pctInput.addEventListener("input", render);
+
+  render();
+</script>
+
+</body>
+</html>
