@@ -1,20 +1,29 @@
 from http.client import responses
 
-from fastapi import FastAPI, Request, Form, Depends
+from fastapi import FastAPI, Request, Form, Depends, APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
 from db import Base, engine, SessionLocal
 from models import User,Post
-
+from routers.chart import router as chart_router
 app = FastAPI()
+app.include_router(chart_router)
 templates = Jinja2Templates(directory="templates")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # 테이블 생성
 Base.metadata.create_all(bind=engine)
 
@@ -96,3 +105,5 @@ def create_post(
     db.refresh(post)  # ✅ id 같은 값 다시 읽기
 
     return HTMLResponse("글 작성 완료")
+
+
